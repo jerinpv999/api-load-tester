@@ -76,6 +76,24 @@ func registerDemo(mux *http.ServeMux, port string) {
 		writeJSON(w, 200, map[string]any{"q": r.URL.Query().Get("q"), "results": []int{1, 2, 3}})
 	})
 
+	// Token-protected endpoint for trying the single-request flow:
+	// requires "Authorization: Bearer demo-token" and a JSON body with "productId".
+	mux.HandleFunc("POST /demo/secure/orders", func(w http.ResponseWriter, r *http.Request) {
+		if r.Header.Get("Authorization") != "Bearer demo-token" {
+			writeJSON(w, 401, map[string]string{"error": "missing or invalid bearer token (use: demo-token)"})
+			return
+		}
+		var body map[string]any
+		if err := json.NewDecoder(r.Body).Decode(&body); err != nil || body["productId"] == nil {
+			writeJSON(w, 400, map[string]string{"error": "JSON body with productId is required"})
+			return
+		}
+		if !demoWork(w, 10) {
+			return
+		}
+		writeJSON(w, 201, map[string]any{"orderId": uuid4(), "productId": body["productId"], "status": "created"})
+	})
+
 	spec := map[string]any{
 		"openapi": "3.0.3",
 		"info":    map[string]any{"title": "LoadForge Demo Store API", "version": "1.0.0"},

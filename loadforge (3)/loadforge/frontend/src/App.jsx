@@ -1,9 +1,11 @@
-import React, { useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useRef, useState } from 'react'
 import ImportPage from './ImportPage'
 import ConfigPage from './ConfigPage'
 import RunPage from './RunPage'
 import HistoryPage from './HistoryPage'
 import { TEST_TYPES } from './presets'
+import Tour from './Tour'
+import { importSpec, demoSpecUrl } from './api'
 
 const defaultConfig = {
   name: '',
@@ -34,7 +36,7 @@ function usePersisted(key, initial) {
 }
 
 const NAV = [
-  ['import', '1', 'Import'],
+  ['import', '1', 'API'],
   ['config', '2', 'Configure'],
   ['run', '3', 'Run & results'],
   ['history', '', 'History'],
@@ -45,6 +47,34 @@ export default function App() {
   const [collection, setCollection] = usePersisted('lf.collection', null)
   const [config, setConfig] = usePersisted('lf.config', defaultConfig)
   const [runId, setRunId] = usePersisted('lf.runId', null)
+  const [touring, setTouring] = useState(false)
+
+  // First visit: start the guided tour automatically (once).
+  useEffect(() => {
+    let seen = true
+    try { seen = localStorage.getItem('lf.tourDone') === '1' } catch { /* storage blocked */ }
+    if (!seen) {
+      const t = setTimeout(() => setTouring(true), 700)
+      return () => clearTimeout(t)
+    }
+  }, [])
+  const endTour = () => {
+    setTouring(false)
+    try { localStorage.setItem('lf.tourDone', '1') } catch { /* ignore */ }
+  }
+
+  // Configure-page steps need something to configure: load the demo API if nothing is imported.
+  const colRef = useRef(collection)
+  colRef.current = collection
+  const ensureCollection = useCallback(async () => {
+    if (colRef.current) return
+    try {
+      const text = await (await fetch(demoSpecUrl())).text()
+      const col = await importSpec(text)
+      colRef.current = col
+      setCollection(col)
+    } catch { /* tour falls back to centred cards */ }
+  }, [setCollection])
 
   return (
     <div className="app">
@@ -53,16 +83,25 @@ export default function App() {
           <svg viewBox="0 0 32 32" width="26" height="26"><rect width="32" height="32" rx="7" fill="var(--accent)" /><path d="M7 22l6-7 4 4 8-10" stroke="#fff" strokeWidth="3" fill="none" strokeLinecap="round" strokeLinejoin="round" /></svg>
           <span>LoadForge</span>
         </div>
-        <div className="nav">
+        <div className="nav" data-tour="nav">
           {NAV.map(([k, n, l]) => (
             <button key={k} className={tab === k ? 'on' : ''} onClick={() => setTab(k)}>
               {n && <i>{n}</i>}{l}
             </button>
           ))}
         </div>
+        <button className="ghost sm tour-btn" data-tour="help" onClick={() => setTouring(true)} title="Guided tour of the app">
+          <span aria-hidden>?</span> Tour
+        </button>
       </nav>
+      <Tour open={touring} onClose={endTour} setTab={setTab} ensureCollection={ensureCollection} />
       <main>
-        {tab === 'import' && <ImportPage collection={collection} setCollection={setCollection} onNext={() => setTab('config')} />}
+        {tab === 'import' && <ImportPage collection={collection} setCollection={setCollection} onNext={() => setTab('config')}
+            onSingle={(col, insecureTls) => {
+              setCollection(col)
+              setConfig((c) => ({ ...c, name: '', insecureTls: insecureTls || c.insecureTls }))
+              setTab('config')
+            }} />}
         {tab === 'config' && (
           <ConfigPage collection={collection} setCollection={setCollection} config={config} setConfig={setConfig}
             goImport={() => setTab('import')} onStarted={(id) => { setRunId(id); setTab('run') }} />

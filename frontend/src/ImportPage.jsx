@@ -1,9 +1,10 @@
-import React, { useMemo, useRef, useState } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { importSpec, fetchSpec, demoSpecUrl } from './api'
 import { Card, Method, Empty } from './components'
+import SingleRequest from './SingleRequest'
 
-export default function ImportPage({ collection, setCollection, onNext }) {
-  const [mode, setMode] = useState('file')
+export default function ImportPage({ collection, setCollection, onNext, onSingle }) {
+  const [mode, setMode] = useState('single')
   const [text, setText] = useState('')
   const [url, setUrl] = useState('')
   const [busy, setBusy] = useState(false)
@@ -12,6 +13,13 @@ export default function ImportPage({ collection, setCollection, onNext }) {
   const [filter, setFilter] = useState('')
   const [open, setOpen] = useState(null)
   const fileRef = useRef()
+
+  // The guided tour asks for the single-request builder to be visible.
+  useEffect(() => {
+    const f = (e) => e.detail?.importMode && setMode(e.detail.importMode)
+    window.addEventListener('lf:tour', f)
+    return () => window.removeEventListener('lf:tour', f)
+  }, [])
 
   const run = async (fn) => {
     setBusy(true)
@@ -51,18 +59,19 @@ export default function ImportPage({ collection, setCollection, onNext }) {
     <div className="page">
       <div className="page-h">
         <div>
-          <h1>Import your API</h1>
-          <p className="muted">OpenAPI 3.x / Swagger 2.0 (JSON or YAML) or a Postman v2 / v2.1 collection.</p>
+          <h1>What do you want to test?</h1>
+          <p className="muted">A single API with its token &amp; payload, an OpenAPI / Swagger spec (JSON or YAML), or a Postman v2 / v2.1 collection.</p>
         </div>
-        <button className="ghost" onClick={loadDemo} disabled={busy}>Try the built-in demo API</button>
+        <button className="ghost" data-tour="demo" onClick={loadDemo} disabled={busy}>Try the built-in demo API</button>
       </div>
 
       <Card>
-        <div className="tabs-sm">
-          {[['file', 'Upload file'], ['paste', 'Paste'], ['url', 'From URL']].map(([k, l]) => (
+        <div className="tabs-sm" data-tour="import-tabs">
+          {[['single', 'Single API request'], ['file', 'Upload spec / collection'], ['paste', 'Paste spec'], ['url', 'Spec from URL']].map(([k, l]) => (
             <button key={k} className={mode === k ? 'on' : ''} onClick={() => setMode(k)}>{l}</button>
           ))}
         </div>
+        {mode === 'single' && <SingleRequest collection={collection} onUse={onSingle} />}
         {mode === 'file' && (
           <div
             className={`drop ${drag ? 'drag' : ''}`}
@@ -94,7 +103,7 @@ export default function ImportPage({ collection, setCollection, onNext }) {
         {error && <div className="alert err">{error}</div>}
       </Card>
 
-      {collection ? (
+      {mode === 'single' ? null : collection ? (
         <Card
           title={collection.name}
           subtitle={`${collection.source} · ${eps.length} endpoints · ${enabled} selected · base ${collection.baseUrl || '(not set)'}`}

@@ -20,7 +20,7 @@ export default function HistoryPage({ openRun }) {
 
   return (
     <div className="page">
-      <div className="page-h"><div><h1>History</h1><p className="muted">Every run is saved on the server volume with downloadable reports.</p></div></div>
+      <div className="page-h" data-tour="history"><div><h1>History</h1><p className="muted">Every run is saved on the server volume with downloadable reports.</p></div></div>
       {error && <div className="alert err">{error}</div>}
       {runs === null ? <p className="muted">Loading…</p> : runs.length === 0 ? (
         <Empty title="No runs yet">Your completed tests will appear here.</Empty>

@@ -52,7 +52,7 @@ export default function RunPage({ runId, goHistory }) {
 
   return (
     <div className="page">
-      <div className="page-h">
+      <div className="page-h" data-tour="run-head">
         <div>
           <div className="row gap">
             <span className={`status st-${run.status}`}>{running && <i className="pulse" />}{run.status}</span>
@@ -62,7 +62,7 @@ export default function RunPage({ runId, goHistory }) {
           <h1>{run.config.name}</h1>
           <p className="muted mono small">{run.config.baseUrl} · {run.id}</p>
         </div>
-        <div className="row gap wrap">
+        <div className="row gap wrap" data-tour="run-downloads">
           {running ? (
             <button className="danger" disabled={stopping} onClick={() => { setStopping(true); stopRun(runId).catch(() => {}) }}>
               {stopping ? 'Stopping…' : '■ Stop test'}

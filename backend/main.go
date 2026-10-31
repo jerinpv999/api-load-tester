@@ -44,6 +44,7 @@ func main() {
 	})
 	mux.HandleFunc("POST /api/import", srv.handleImport)
 	mux.HandleFunc("POST /api/fetch-spec", srv.handleFetchSpec)
+	mux.HandleFunc("POST /api/try", srv.handleTry)
 	mux.HandleFunc("GET /api/runs", srv.handleList)
 	mux.HandleFunc("POST /api/runs", srv.handleStart)
 	mux.HandleFunc("GET /api/runs/{id}", srv.handleGet)

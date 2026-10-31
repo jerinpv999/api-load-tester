@@ -61,8 +61,10 @@ export default function ConfigPage({ collection, setCollection, config, setConfi
         </div>
       </div>
 
+      {collection.source === 'single' && enabled[0] && <SingleSummary ep={enabled[0]} base={collection.baseUrl} onEdit={goImport} />}
+
       <Card title="Test profile">
-        <div className="types">
+        <div className="types" data-tour="types">
           {Object.entries(TEST_TYPES).map(([k, t]) => (
             <button key={k} className={`type ${config.type === k ? 'on' : ''}`} onClick={() => set({ type: k })}>
               <b>{t.label}</b>
@@ -71,7 +73,7 @@ export default function ConfigPage({ collection, setCollection, config, setConfi
           ))}
         </div>
 
-        <div className="profile">
+        <div className="profile" data-tour="profile">
           <div className="profile-params">
             {preset.fields.map(([k, label]) => (
               <Field key={k} label={label}>
@@ -108,7 +110,7 @@ export default function ConfigPage({ collection, setCollection, config, setConfi
       </Card>
 
       <div className="grid-2">
-        <Card title="Target">
+        <Card title="Target" tour="target">
           <Field label="Test name"><input value={config.name} placeholder={collection.name} onChange={(e) => set({ name: e.target.value })} /></Field>
           <Field label="Base URL" hint="Inside Docker, use host.docker.internal to reach services on your machine.">
             <input className="mono" value={collection.baseUrl} placeholder="https://api.example.com"
@@ -123,7 +125,7 @@ export default function ConfigPage({ collection, setCollection, config, setConfi
           {missing.length > 0 && <div className="alert warn">Empty variables: {missing.join(', ')}. Requests may fail authentication.</div>}
         </Card>
 
-        <Card title="Execution & thresholds">
+        <Card title="Execution & thresholds" tour="exec">
           <div className="grid-2 tight">
             <Field label="Max requests/sec" hint="0 = unlimited"><input type="number" min="0" value={config.maxRps} onChange={(e) => set({ maxRps: e.target.value })} /></Field>
             <Field label="Request timeout (ms)"><input type="number" min="100" value={config.timeoutMs} onChange={(e) => set({ timeoutMs: e.target.value })} /></Field>
@@ -144,7 +146,7 @@ export default function ConfigPage({ collection, setCollection, config, setConfi
       </div>
 
       {error && <div className="alert err">{error}</div>}
-      <div className="start-bar">
+      <div className="start-bar" data-tour="start">
         <span className="muted">Only test systems you own or are authorised to test.</span>
         <button className="primary lg" disabled={busy || !enabled.length} onClick={start}>{busy ? 'Starting…' : `▶ Start ${TEST_TYPES[config.type].label.toLowerCase()} test`}</button>
       </div>
@@ -167,5 +169,25 @@ function StageEditor({ stages, onChange }) {
       ))}
       <button className="link" onClick={() => onChange([...stages, { durationSec: 30, targetVus: stages.at(-1)?.targetVus || 10 }])}>+ Add stage</button>
     </div>
+  )
+}
+
+function SingleSummary({ ep, base, onEdit }) {
+  const mask = (k, v) => (/authorization|api-key|apikey|token|secret/i.test(k) ? v.slice(0, 13) + (v.length > 13 ? '•••' : '') : v)
+  const h = Object.entries(ep.headers || {})
+  return (
+    <Card title="API under test" actions={<button className="ghost sm" onClick={onEdit}>Edit request</button>}>
+      <div className="mono req-sum"><span className={`method m-${ep.method.toLowerCase()}`}>{ep.method}</span> {base}{ep.path}</div>
+      <div className="grid-2 tight sum-grid">
+        <div>
+          <div className="field-l">Headers ({h.length})</div>
+          {h.length ? h.map(([k, v]) => <div key={k} className="mono small"><b>{k}:</b> {mask(k, v)}</div>) : <div className="muted small">none</div>}
+        </div>
+        <div>
+          <div className="field-l">Payload</div>
+          {ep.body ? <pre className="resp-body small-pre">{ep.body.length > 600 ? ep.body.slice(0, 600) + '\n…' : ep.body}</pre> : <div className="muted small">no body</div>}
+        </div>
+      </div>
+    </Card>
   )
 }

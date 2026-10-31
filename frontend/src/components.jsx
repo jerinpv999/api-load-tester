@@ -14,9 +14,9 @@ export function Kpi({ label, value, sub, tone }) {
   )
 }
 
-export function Card({ title, subtitle, actions, children, className = '' }) {
+export function Card({ title, subtitle, actions, children, className = '', tour }) {
   return (
-    <section className={`card ${className}`}>
+    <section className={`card ${className}`} data-tour={tour}>
       {(title || actions) && (
         <div className="card-h">
           <div>

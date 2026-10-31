@@ -45,3 +45,7 @@ export const deleteRun = (id) => req(`/api/runs/${id}`, { method: 'DELETE' })
 export const streamUrl = (id) => `${BASE}/api/runs/${id}/stream`
 export const reportUrl = (id, ext, download = false) => `${BASE}/api/runs/${id}/report/${ext}${download ? '?download=1' : ''}`
 export const demoSpecUrl = () => `${BASE}/demo/openapi.json`
+
+/** Sends one real request through the backend (same network as the load generator). */
+export const tryRequest = (r) =>
+  req('/api/try', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(r) })
