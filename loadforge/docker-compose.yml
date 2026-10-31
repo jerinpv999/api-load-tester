@@ -1,0 +1,40 @@
+name: loadforge
+
+services:
+  backend:
+    build: ./backend
+    image: loadforge-backend:latest
+    restart: unless-stopped
+    environment:
+      PORT: "8080"
+      DATA_DIR: /data
+      TZ: ${TZ:-UTC}
+    volumes:
+      - loadforge-data:/data            # run history + reports survive restarts
+    extra_hosts:
+      - "host.docker.internal:host-gateway"  # lets tests reach APIs running on the Docker host
+    ulimits:
+      nofile: { soft: 65535, hard: 65535 }   # many concurrent connections for high VU counts
+    sysctls:
+      net.ipv4.ip_local_port_range: "1024 65000"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8080/api/health"]
+      interval: 15s
+      timeout: 3s
+      retries: 5
+    # Uncomment to call the API directly (CI pipelines, scripts):
+    # ports:
+    #   - "8080:8080"
+
+  frontend:
+    build: ./frontend
+    image: loadforge-frontend:latest
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "${LOADFORGE_PORT:-3000}:80"
+
+volumes:
+  loadforge-data:
